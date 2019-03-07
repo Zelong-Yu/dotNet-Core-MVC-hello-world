@@ -22,23 +22,45 @@ namespace HelloWorld
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
             
-            if (env.IsDevelopment())
+            if (env.IsEnvironment("Development"))
             {
                 app.UseDeveloperExceptionPage();
             }
-            app.Map("/test",testPipeline);
+            app.Map("/test", testPipeline);
+            app.Use(next => async context =>
+              {
+                  await context.Response.WriteAsync("Before Hello: ");
+                  await next.Invoke(context);
+              });
             //Hello hello = new Hello();
             app.Run(async (context) =>
             {
+              //  throw new Exception("Hello Exception");
                 await context.Response.WriteAsync("Hello World");
             });
         }
 
         private static void testPipeline(IApplicationBuilder app)
         {
+            app.MapWhen(context => { return context.Request.Query.ContainsKey("ln"); }, testPipeline1);
+            app.MapWhen(context => { return context.Request.Query.ContainsKey("q"); }, testPipeline2);
             app.Run(async context =>
             {
-                await context.Response.WriteAsync("Hell from test mapping");
+                await context.Response.WriteAsync("Hell from test Mapping!");
+            });
+        }
+        private static void testPipeline1(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                await context.Response.WriteAsync("Hell from testPipeline1");
+            });
+        }
+        private static void testPipeline2(IApplicationBuilder app)
+        {
+            app.Run(async context =>
+            {
+                await context.Response.WriteAsync("Hell from testPipeline2");
             });
         }
     }
